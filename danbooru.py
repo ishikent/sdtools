@@ -8,6 +8,7 @@ import json
 import argparse
 
 from bs4 import BeautifulSoup
+import asyncio
 
 base_url = "https://danbooru.donmai.us"
 search_tmp_url = f"{base_url}/posts/"
@@ -77,6 +78,9 @@ def get_latest_id(driver):
 
     return int(ele.get_attribute("href").split("/")[-1])
 
+async def asyn_write(filepath, data_bytes):
+    with open(filepath, 'wb') as bin_out:
+        bin_out.write(bytes(data_bytes))
 
 #普通にURLをとってきてrequests.getで画像を取得するのが一般的だが、
 #danbooruは動的ページ+ anti bot serviceなのでpythonからのリクエストでは403になる
@@ -102,10 +106,9 @@ def save_binary(driver, url, filepath):
     js += "return getBinaryResourceText(\"{url}\");".format(url=url)
 
     data_bytes = driver.execute_script(js)
-    with open(filepath, 'wb') as bin_out:
-        bin_out.write(bytes(data_bytes))
+    asyncio.run(asyn_write(filepath, data_bytes))
 
-def save_dict_as_json(dict, filename):
+async def save_dict_as_json(dict, filename):
     with open(filename + ".json", "w") as f:
         json.dump(dict, f, indent = 4)
 
@@ -187,7 +190,7 @@ if __name__ == "__main__":
         od = OrderedDict()
         od["tags"]         = get_tag_all(soup)
         od["informations"] = get_info(soup)
-        save_dict_as_json(od, f"{dirname1}/{id:015}")
+        asyncio.run(save_dict_as_json(od, f"{dirname1}/{id:015}"))
 
     driver.quit()
     display.stop()
