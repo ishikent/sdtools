@@ -60,9 +60,9 @@ def get_info_by_type(type, tag):
     except Exception:
         return None
 
-def download_img(url, id):
+def download_img(driver, url, id):
     extensions = url.split(".")[-1]
-    save_binary(url, id + "." + extensions)
+    save_binary(driver, url, id + "." + extensions)
 
 def get_loaded_end_id(dirpath):
     hoge = sorted([i for i in dirpath.iterdir()], key=lambda x: int(str(x.name).split(".")[0]))
@@ -81,7 +81,7 @@ def get_latest_id(driver):
 #普通にURLをとってきてrequests.getで画像を取得するのが一般的だが、
 #danbooruは動的ページ+ anti bot serviceなのでpythonからのリクエストでは403になる
 #よってselenium上で画像を保存するために以下の関数を使用する
-def save_binary(url, filepath):
+def save_binary(driver, url, filepath):
     js = """
     var getBinaryResourceText = function(url) {
         var req = new XMLHttpRequest();
@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
         # #画像保存
         img_src = soup.select_one("aside#sidebar > section#post-options > ul > li#post-option-download > a")["href"].split("?")[0]
-        download_img(img_src, f"{dirname}/{id:015}")
+        download_img(driver, img_src, f"{dirname}/{id:015}")
 
         #メタ情報保存
         od = OrderedDict()
