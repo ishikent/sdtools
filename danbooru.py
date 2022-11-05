@@ -150,7 +150,7 @@ if __name__ == "__main__":
         WebDriverWait(driver, 10).until(EC.all_of(
             EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#tag-list > div.tag-list > ul.meta-tag-list > li")), #タグ
             EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-information > ul > li#post-info-status")), #information
-            EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-options > ul > li#post-option-download > a")) #画像
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div.sidebar-container > section#content > section.image-container > picture > source")) #画像
         ))
 
         #パースhtmlを取得
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         soup = BeautifulSoup(html, "lxml")
 
         # #画像保存
-        img_src = soup.select_one("aside#sidebar > section#post-options > ul > li#post-option-download > a")["href"].split("?")[0]
+        img_src = soup.select_one("div.sidebar-container > section#content > section.image-container > picture > source")["srcset"]
         download_img(driver, img_src, f"{dirname}/{id:015}")
 
         #メタ情報保存
