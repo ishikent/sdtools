@@ -172,7 +172,7 @@ if __name__ == "__main__":
             save_dict_as_json(od, f"{dirname1}/{id:015}")
 
     driver.quit()
-    display.end()
+    display.stop()
 
     time_end = time.perf_counter()
 
