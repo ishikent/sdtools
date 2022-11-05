@@ -109,6 +109,26 @@ def save_dict_as_json(dict, filename):
     with open(filename + ".json", "w") as f:
         json.dump(dict, f, indent = 4)
 
+def get_options():
+
+    options = uc.ChromeOptions()
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-extensions")
+    options.add_argument('--disable-gpu')  
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--allow-running-insecure-content')
+    options.add_argument('--disable-web-security')
+    options.add_argument('--disable-desktop-notifications')
+    options.add_argument("--disable-extensions")
+    options.add_argument('--lang=ja')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--proxy-server="direct://"')
+    options.add_argument('--proxy-bypass-list=*')    
+    options.add_argument('--start-maximized')
+
+    return options
+
+
 if __name__ == "__main__":
     count = 1
     parser = argparse.ArgumentParser()
@@ -132,9 +152,7 @@ if __name__ == "__main__":
     display = Display(visible=0, size=(800, 600))
     display.start()
 
-    options = uc.ChromeOptions()
-    options.add_argument("--no-sandbox")
-    driver = uc.Chrome(use_subprocess=True)
+    driver = uc.Chrome(use_subprocess=True, options = get_options())
 
     loded_end_id = get_loaded_end_id(dirname1)
 
