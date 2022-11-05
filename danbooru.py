@@ -46,7 +46,7 @@ def get_info(soup):
 def get_info_by_type(type, tag):
     try : 
         if type in {"id", "size", "rating", "status"}:
-            return tag.get_text().split(":")[-1].strip() if tag.get_text() else ""
+            return tag.get_text(strip = True).split(":")[-1].strip() if tag.get_text(strip = True) else ""
         elif type == "uploader":
             return tag.find("a")["data-user-id"]
         elif type == "date":
@@ -54,9 +54,9 @@ def get_info_by_type(type, tag):
         elif type == "source":
             return tag.find("a")["href"]
         elif type == "score":
-            return tag.find(class_ = "post-score").get_text()
+            return tag.find(class_ = "post-score").get_text(strip = True)
         elif type == "favorites":
-            return tag.find(class_ = "post-favcount").get_text()
+            return tag.find(class_ = "post-favcount").get_text(strip = True)
     except Exception:
         return None
 
