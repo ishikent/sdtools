@@ -7,6 +7,8 @@ import pathlib
 import json
 import argparse
 
+from bs4 import BeautifulSoup
+
 base_url = "https://danbooru.donmai.us"
 search_tmp_url = f"{base_url}/posts/"
 preview_link_cls = ".post-preview-link"
@@ -15,56 +17,46 @@ def initalize(savedir):
     if not savedir.exists():
         os.mkdir(savedir)
 
-
-def get_imgsrc(driver):
-    try :
-        imgele = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, "img#image"))) 
-        return imgele.get_attribute("src")
-    except :
-        return None
-
-
-def get_tag_list(driver, clsname): #clsnameの例："artist"
+def get_tag_list(soup, clsname): #clsnameの例："artist"
     taglist = []
-    ul_ele = driver.find_elements(By.CSS_SELECTOR, f"ul.{clsname}-tag-list > li[data-tag-name]")
+    ul_ele = soup.select(f"aside#sidebar > section#tag-list > div.tag-list > ul.{clsname}-tag-list > li[data-tag-name]") #return bs4.element.resultset
     for li_ele in ul_ele:
-        taglist.append(li_ele.get_attribute("data-tag-name"))
+        taglist.append(li_ele["data-tag-name"])
 
     return taglist
 
 
-def get_tag_all(driver):
+def get_tag_all(soup):
     od = OrderedDict()
     tag_cls_list = ["artist", "copyright", "character", "general", "meta"]
     for tag_cls in tag_cls_list:
-        od[tag_cls] = get_tag_list(driver, tag_cls)
+        od[tag_cls] = get_tag_list(soup, tag_cls)
 
     return od
 
-def get_info(driver):
+def get_info(soup):
     od = OrderedDict()
-    inf_list = driver.find_elements(By.CSS_SELECTOR, "section#post-information > ul > li") #情報を上から順に辞書に追加する
+    inf_list = soup.select("section#post-information > ul > li") #情報を上から順に辞書に追加する
     for inf in inf_list:
-        inf_type = inf.get_attribute("id").split("-")[-1]
-        od[inf_type] = get_info_by_type(driver, inf_type, inf)
+        inf_type = inf["id"].split("-")[-1]
+        od[inf_type] = get_info_by_type(inf_type, inf)
     
     return od
 
-def get_info_by_type(driver, type, element):
+def get_info_by_type(type, tag):
     try : 
         if type in {"id", "size", "rating", "status"}:
-            return element.text.split(":")[-1].strip() if element.text else ""
+            return tag.get_text().split(":")[-1].strip() if tag.get_text() else ""
         elif type == "uploader":
-            user_id = element.find_element(By.TAG_NAME, "a").get_attribute("data-user-id")
-            return user_id
+            return tag.find("a")["data-user-id"]
         elif type == "date":
-            return element.find_element(By.TAG_NAME, "time").get_attribute("datetime")
+            return tag.find("time")["datetime"]
         elif type == "source":
-            return element.find_element(By.TAG_NAME, "a").get_attribute("href")
+            return tag.find("a")["href"]
         elif type == "score":
-            return element.find_element(By.CLASS_NAME, "post-score").text
+            return tag.find(class_ = "post-score").get_text()
         elif type == "favorites":
-            return element.find_element(By.CLASS_NAME, "post-favcount").text
+            return tag.find(class_ = "post-favcount").get_text()
     except Exception:
         return None
 
@@ -155,16 +147,24 @@ if __name__ == "__main__":
         tmp_url = f"{search_tmp_url}/{id}"
         driver.get(tmp_url)
 
+        WebDriverWait(driver, 10).until(EC.all_of(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#tag-list > div.tag-list > ul.meta-tag-list > li")), #タグ
+            EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-information > ul > li#post-info-status")), #information
+            EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-options > ul > li#post-option-download > a")) #画像
+        ))
 
-        #画像保存
-        img_src = get_imgsrc(driver)
-        if img_src:
-            download_img(img_src, f"{dirname}/{id:015}")
+        #パースhtmlを取得
+        html = driver.page_source.encode('utf-8')
+        soup = BeautifulSoup(html, "lxml")
+
+        # #画像保存
+        img_src = soup.select_one("aside#sidebar > section#post-options > ul > li#post-option-download > a")["href"].split("?")[0]
+        download_img(img_src, f"{dirname}/{id:015}")
 
         #メタ情報保存
         od = OrderedDict()
-        od["tags"]         = get_tag_all(driver) 
-        od["informations"] = get_info(driver)
+        od["tags"]         = get_tag_all(soup)
+        od["informations"] = get_info(soup)
         if od:
             save_dict_as_json(od, f"{dirname1}/{id:015}")
 
