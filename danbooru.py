@@ -147,11 +147,15 @@ if __name__ == "__main__":
         tmp_url = f"{search_tmp_url}/{id}"
         driver.get(tmp_url)
 
-        WebDriverWait(driver, 10).until(EC.all_of(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#tag-list > div.tag-list > ul.meta-tag-list > li")), #タグ
-            EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-information > ul > li#post-info-status")), #information
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.sidebar-container > section#content > section.image-container > picture > source")) #画像
-        ))
+        try :
+            WebDriverWait(driver, 3).until(EC.all_of(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#tag-list > div.tag-list > ul > li")), #タグ
+                EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-information > ul > li#post-info-id")), #information
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.sidebar-container > section#content > section.image-container > picture > source")) #画像
+            ))
+        except Exception:
+            print("not found")
+            continue
 
         #パースhtmlを取得
         html = driver.page_source.encode('utf-8')
@@ -165,8 +169,7 @@ if __name__ == "__main__":
         od = OrderedDict()
         od["tags"]         = get_tag_all(soup)
         od["informations"] = get_info(soup)
-        if od:
-            save_dict_as_json(od, f"{dirname1}/{id:015}")
+        save_dict_as_json(od, f"{dirname1}/{id:015}")
 
     driver.quit()
     display.stop()
