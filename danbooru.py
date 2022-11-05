@@ -6,7 +6,6 @@ import os
 import pathlib
 import json
 import argparse
-import time
 
 base_url = "https://danbooru.donmai.us"
 search_tmp_url = f"{base_url}/posts/"
@@ -136,8 +135,6 @@ if __name__ == "__main__":
     initalize(dirname)
     initalize(dirname1)
 
-    time_sta = time.perf_counter()
-
     import undetected_chromedriver.v2 as uc
     from pyvirtualdisplay import Display
     display = Display(visible=0, size=(800, 600))
@@ -173,8 +170,4 @@ if __name__ == "__main__":
 
     driver.quit()
     display.stop()
-
-    time_end = time.perf_counter()
-
-    print(time_end - time_sta)
 
