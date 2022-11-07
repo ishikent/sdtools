@@ -180,18 +180,18 @@ def main_task(id_range):
             od.move_to_end("informations")
             asyncio.run(save_dict_as_json(od, f"{dirname1}/{id:015}"))
         except :
-            print("not found : id")
+            print(f"not found : id {id}")
             continue
 
         # #画像保存
         img_src = soup.select_one("div.sidebar-container > section#content > section.image-container > picture > source")
         if not img_src:
-            print("!!!not found!!! : image")
+            print(f"!!!not found!!! : image {id}")
             continue
 
         download_img(driver, img_src["srcset"], f"{dirname}/{id:015}")
 
-        print(keisoku(driver))
+        # print(keisoku(driver))
 
     driver.quit()
     display.stop()
