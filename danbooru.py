@@ -77,11 +77,10 @@ def get_loaded_end_id(dirpath):
     else :
         return 1
 
-def get_latest_id(driver):
-    driver.get(search_tmp_url)
-    ele = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, preview_link_cls))) 
-
-    return int(ele.get_attribute("href").split("/")[-1])
+# def get_latest_id(driver):
+#     driver.get(search_tmp_url)
+#     ele = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, preview_link_cls))) 
+#     return int(ele.get_attribute("href").split("/")[-1])
 
 async def asyn_write(filepath, data_bytes):
     with open(filepath, 'wb') as bin_out:
@@ -178,11 +177,9 @@ if __name__ == "__main__":
 
     loded_end_id = get_loaded_end_id(dirname1)
 
-    latest_id = get_latest_id(driver)
     print(f"loaded_last id : {loded_end_id}")
-    print(f"latest id : {latest_id}")
     
-    for id in range(max(loded_end_id, args.start), min(args.end, latest_id) + 1):
+    for id in range(max(loded_end_id, args.start), min(args.end, 5000000) + 1):
         print(f"loop id : {id}")
         tmp_url = f"{search_tmp_url}/{id}"
         driver.get(tmp_url)
