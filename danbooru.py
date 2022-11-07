@@ -197,10 +197,11 @@ def main_task(id_range):
     display.stop()
 
 if __name__ == "__main__":
-    max_workers = 3
+
     count = 1
     parser = argparse.ArgumentParser()
     parser.add_argument("save_dir", default = "./", nargs="?")
+    parser.add_argument("--workers", default = 1, required=False, type=int)
     parser.add_argument("--start", default = 0, required=False, type=int)
     parser.add_argument("--end", default = 100, required=False, type=int)
     args = parser.parse_args()
@@ -219,6 +220,8 @@ if __name__ == "__main__":
     end = min(args.end, 6000000) + 1
     print(f"start: {start} ---- end: {args.end}")
 
+    max_workers = args.workers
+    print(f"workers : {max_workers}")
     with ProcessPoolExecutor(max_workers = max_workers) as executor:
         futures = []
         for id_range in np.array_split([id for id in range(start, end)], max_workers):
