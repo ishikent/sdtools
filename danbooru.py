@@ -16,9 +16,6 @@ import numpy as np
 import undetected_chromedriver.v2 as uc
 from pyvirtualdisplay import Display
 
-base_url = "https://danbooru.donmai.us"
-search_tmp_url = f"{base_url}/posts/"
-
 def initalize(savedir):
     if not savedir.exists():
         os.mkdir(savedir)
@@ -158,20 +155,22 @@ def main_task(id_range):
     display = Display(visible=0, size=(800, 600))
     display.start()
 
+    base_url = f"https://danbooru.donmai.us/posts/"
     driver = uc.Chrome(use_subprocess=True, options = get_options())
 
-    base_url = "https://danbooru.donmai.us"
-    search_tmp_url = f"{base_url}/posts/"
+    #最初に一度ログインしておくことでセッションを確立する
+    #(しないでいきなり目的のページに行くとhtmlが読込みで時間がかかりタイムアウトになる)
+    driver.get(base_url)
+    WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".post-preview-link")))
 
     for id in id_range:
         print(f"loop id : {id}")
-        tmp_url = f"{search_tmp_url}/{id}"
+        tmp_url = f"{base_url}/{id}"
         driver.get(tmp_url)
 
         #パースhtmlを取得
         html = driver.page_source.encode('utf-8')
         soup = BeautifulSoup(html, "lxml")
-        print(soup.prettify())
 
         #メタ情報保存
         try :
