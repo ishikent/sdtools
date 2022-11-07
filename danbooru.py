@@ -131,6 +131,19 @@ def get_options():
 
     return options
 
+def keisoku(driver):
+    js = """
+        var timing = window.performance.timing;
+        var tmp = '';
+        tmp += `TCP接続時間:    ${timing.connectEnd - timing.connectStart} :`
+        tmp += `リクエスト時間: ${timing.responseStart - timing.requestStart} :`
+        tmp += `レスポンス時間: ${timing.responseEnd - timing.responseStart} :`
+        tmp += `DOMの構築時間:  ${timing.domComplete - timing.domLoading} :`
+
+        return tmp;
+    """
+    return driver.execute_script(js)
+
 
 if __name__ == "__main__":
     count = 1
@@ -168,29 +181,31 @@ if __name__ == "__main__":
         tmp_url = f"{search_tmp_url}/{id}"
         driver.get(tmp_url)
 
-        try :
-            WebDriverWait(driver, 3).until(EC.all_of(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#tag-list > div.tag-list > ul > li")), #タグ
-                EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-information > ul > li#post-info-id")), #information
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div.sidebar-container > section#content > section.image-container > picture > source")) #画像
-            ))
-        except Exception:
-            print("not found")
-            continue
+        print(keisoku(driver))
 
-        #パースhtmlを取得
-        html = driver.page_source.encode('utf-8')
-        soup = BeautifulSoup(html, "lxml")
+        # try :
+        #     WebDriverWait(driver, 3).until(EC.all_of(
+        #         EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#tag-list > div.tag-list > ul > li")), #タグ
+        #         EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-information > ul > li#post-info-id")), #information
+        #         EC.presence_of_element_located((By.CSS_SELECTOR, "div.sidebar-container > section#content > section.image-container > picture > source")) #画像
+        #     ))
+        # except Exception:
+        #     print("not found")
+        #     continue
 
-        # #画像保存
-        img_src = soup.select_one("div.sidebar-container > section#content > section.image-container > picture > source")["srcset"]
-        download_img(driver, img_src, f"{dirname}/{id:015}")
+        # #パースhtmlを取得
+        # html = driver.page_source.encode('utf-8')
+        # soup = BeautifulSoup(html, "lxml")
 
-        #メタ情報保存
-        od = OrderedDict()
-        od["tags"]         = get_tag_all(soup)
-        od["informations"] = get_info(soup)
-        asyncio.run(save_dict_as_json(od, f"{dirname1}/{id:015}"))
+        # # #画像保存
+        # img_src = soup.select_one("div.sidebar-container > section#content > section.image-container > picture > source")["srcset"]
+        # download_img(driver, img_src, f"{dirname}/{id:015}")
+
+        # #メタ情報保存
+        # od = OrderedDict()
+        # od["tags"]         = get_tag_all(soup)
+        # od["informations"] = get_info(soup)
+        # asyncio.run(save_dict_as_json(od, f"{dirname1}/{id:015}"))
 
     driver.quit()
     display.stop()
