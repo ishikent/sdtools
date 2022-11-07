@@ -11,10 +11,13 @@ from bs4 import BeautifulSoup
 import asyncio
 
 from concurrent.futures import ProcessPoolExecutor
+import numpy as np
+
+import undetected_chromedriver.v2 as uc
+from pyvirtualdisplay import Display
 
 base_url = "https://danbooru.donmai.us"
 search_tmp_url = f"{base_url}/posts/"
-preview_link_cls = ".post-preview-link"
 
 def initalize(savedir):
     if not savedir.exists():
@@ -151,36 +154,16 @@ def keisoku(driver):
     """
     return driver.execute_script(js)
 
-
-if __name__ == "__main__":
-    count = 1
-    parser = argparse.ArgumentParser()
-    parser.add_argument("save_dir", default = "./", nargs="?")
-    parser.add_argument("--start", default = 0, required=False, type=int)
-    parser.add_argument("--end", default = 100, required=False, type=int)
-    args = parser.parse_args()
-
-
-    print(f"start: {args.start} ---- end: {args.end}")
-
-    savedir = pathlib.Path(args.save_dir)
-    dirname = savedir / "danimg"
-    dirname1 = savedir / "danmeta"
-    initalize(savedir)
-    initalize(dirname)
-    initalize(dirname1)
-
-    loded_end_id = get_loaded_end_id(dirname1)
-    print(f"loaded_last id : {loded_end_id}")
-
-    import undetected_chromedriver.v2 as uc
-    from pyvirtualdisplay import Display
+def main_task(id_range):
     display = Display(visible=0, size=(800, 600))
     display.start()
 
     driver = uc.Chrome(use_subprocess=True, options = get_options())
 
-    for id in range(max(loded_end_id, args.start), min(args.end, 5000000) + 1):
+    base_url = "https://danbooru.donmai.us"
+    search_tmp_url = f"{base_url}/posts/"
+
+    for id in id_range:
         print(f"loop id : {id}")
         tmp_url = f"{search_tmp_url}/{id}"
         driver.get(tmp_url)
@@ -188,10 +171,11 @@ if __name__ == "__main__":
         #パースhtmlを取得
         html = driver.page_source.encode('utf-8')
         soup = BeautifulSoup(html, "lxml")
+        print(soup.prettify())
 
         #メタ情報保存
-        od = OrderedDict()
         try :
+            od = OrderedDict()
             od["informations"] = get_info(soup)
             od["tags"] = get_tag_all(soup)
             od.move_to_end("informations")
@@ -212,4 +196,35 @@ if __name__ == "__main__":
 
     driver.quit()
     display.stop()
+
+if __name__ == "__main__":
+    max_workers = 3
+    count = 1
+    parser = argparse.ArgumentParser()
+    parser.add_argument("save_dir", default = "./", nargs="?")
+    parser.add_argument("--start", default = 0, required=False, type=int)
+    parser.add_argument("--end", default = 100, required=False, type=int)
+    args = parser.parse_args()
+
+    savedir = pathlib.Path(args.save_dir)
+    dirname = savedir / "danimg"
+    dirname1 = savedir / "danmeta"
+    initalize(savedir)
+    initalize(dirname)
+    initalize(dirname1)
+
+    loded_end_id = get_loaded_end_id(dirname1)
+    print(f"loaded_last id : {loded_end_id}")
+
+    start = max(loded_end_id, args.start)
+    end = min(args.end, 6000000) + 1
+    print(f"start: {start} ---- end: {args.end}")
+
+    with ProcessPoolExecutor(max_workers = max_workers) as executor:
+        futures = []
+        for id_range in np.array_split([id for id in range(start, end)], max_workers):
+            futures.append(executor.submit(main_task, id_range))
+        for future in futures:
+            future.result()
+
 
