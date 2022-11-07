@@ -10,6 +10,8 @@ import argparse
 from bs4 import BeautifulSoup
 import asyncio
 
+from concurrent.futures import ProcessPoolExecutor
+
 base_url = "https://danbooru.donmai.us"
 search_tmp_url = f"{base_url}/posts/"
 preview_link_cls = ".post-preview-link"
@@ -168,6 +170,9 @@ if __name__ == "__main__":
     initalize(dirname)
     initalize(dirname1)
 
+    loded_end_id = get_loaded_end_id(dirname1)
+    print(f"loaded_last id : {loded_end_id}")
+
     import undetected_chromedriver.v2 as uc
     from pyvirtualdisplay import Display
     display = Display(visible=0, size=(800, 600))
@@ -175,10 +180,6 @@ if __name__ == "__main__":
 
     driver = uc.Chrome(use_subprocess=True, options = get_options())
 
-    loded_end_id = get_loaded_end_id(dirname1)
-
-    print(f"loaded_last id : {loded_end_id}")
-    
     for id in range(max(loded_end_id, args.start), min(args.end, 5000000) + 1):
         print(f"loop id : {id}")
         tmp_url = f"{search_tmp_url}/{id}"
