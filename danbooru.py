@@ -38,10 +38,15 @@ def get_tag_all(soup):
 def get_info(soup):
     od = OrderedDict()
     inf_list = soup.select("section#post-information > ul > li") #情報を上から順に辞書に追加する
+    if not inf_list:
+        raise Exception #information自体が無いのでスキップ
+
     for inf in inf_list:
         inf_type = inf["id"].split("-")[-1]
         od[inf_type] = get_info_by_type(inf_type, inf)
-    
+        if inf_type == "id" and not od["id"]:
+            raise Exception #idは必ずあるべき値なので、それが取れないページは移行の処理をスキップし高速化を図る
+
     return od
 
 def get_info_by_type(type, tag):
@@ -115,6 +120,7 @@ async def save_dict_as_json(dict, filename):
 def get_options():
 
     options = uc.ChromeOptions()
+    options.page_load_strategy = "eager"
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-extensions")
     options.add_argument('--disable-gpu')  
@@ -181,31 +187,30 @@ if __name__ == "__main__":
         tmp_url = f"{search_tmp_url}/{id}"
         driver.get(tmp_url)
 
+        #パースhtmlを取得
+        html = driver.page_source.encode('utf-8')
+        soup = BeautifulSoup(html, "lxml")
+
+        #メタ情報保存
+        od = OrderedDict()
+        try :
+            od["informations"] = get_info(soup)
+            od["tags"] = get_tag_all(soup)
+            od.move_to_end("informations")
+            asyncio.run(save_dict_as_json(od, f"{dirname1}/{id:015}"))
+        except :
+            print("not found : id")
+            continue
+
+        # #画像保存
+        img_src = soup.select_one("div.sidebar-container > section#content > section.image-container > picture > source")
+        if not img_src:
+            print("!!!not found!!! : image")
+            continue
+
+        download_img(driver, img_src["srcset"], f"{dirname}/{id:015}")
+
         print(keisoku(driver))
-
-        # try :
-        #     WebDriverWait(driver, 3).until(EC.all_of(
-        #         EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#tag-list > div.tag-list > ul > li")), #タグ
-        #         EC.presence_of_element_located((By.CSS_SELECTOR, "aside#sidebar > section#post-information > ul > li#post-info-id")), #information
-        #         EC.presence_of_element_located((By.CSS_SELECTOR, "div.sidebar-container > section#content > section.image-container > picture > source")) #画像
-        #     ))
-        # except Exception:
-        #     print("not found")
-        #     continue
-
-        # #パースhtmlを取得
-        # html = driver.page_source.encode('utf-8')
-        # soup = BeautifulSoup(html, "lxml")
-
-        # # #画像保存
-        # img_src = soup.select_one("div.sidebar-container > section#content > section.image-container > picture > source")["srcset"]
-        # download_img(driver, img_src, f"{dirname}/{id:015}")
-
-        # #メタ情報保存
-        # od = OrderedDict()
-        # od["tags"]         = get_tag_all(soup)
-        # od["informations"] = get_info(soup)
-        # asyncio.run(save_dict_as_json(od, f"{dirname1}/{id:015}"))
 
     driver.quit()
     display.stop()
