@@ -7,7 +7,7 @@ charset-normalizer==2.1.1
 h11==0.14.0
 idna==3.4
 lxml==4.9.1
-numpy==1.23.4
+numpy==1.21.6
 outcome==1.2.0
 PySocks==1.7.1
 PyVirtualDisplay==3.0
