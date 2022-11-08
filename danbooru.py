@@ -75,7 +75,7 @@ def download_img(driver, url, id):
 def get_loaded_end_id(dirpath):
     hoge = sorted([i for i in dirpath.iterdir()], key=lambda x: int(str(x.name).split(".")[0]))
     if hoge:
-        return int(str(hoge[0].name).split(".")[0])
+        return int(str(hoge[-1].name).split(".")[0])
     else :
         return 1
 
