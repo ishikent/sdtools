@@ -161,7 +161,7 @@ def main_task(id_range):
     #最初に一度ログインしておくことでセッションを確立する
     #(しないでいきなり目的のページに行くとhtmlが読込みで時間がかかりタイムアウトになる)
     driver.get(base_url)
-    WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".post-preview-link")))
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".post-preview-link")))
 
     for id in id_range:
         print(f"loop id : {id}")
