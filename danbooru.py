@@ -203,6 +203,7 @@ if __name__ == "__main__":
     parser.add_argument("save_dir", default = "./", nargs="?")
     parser.add_argument("--workers", default = 1, required=False, type=int)
     parser.add_argument("--start", default = 0, required=False, type=int)
+    parser.add_argument("--num", default = -1, required=False, type=int)
     parser.add_argument("--end", default = 100, required=False, type=int)
     args = parser.parse_args()
 
@@ -217,7 +218,11 @@ if __name__ == "__main__":
     print(f"loaded_last id : {loded_end_id}")
 
     start = max(loded_end_id, args.start)
-    end = min(args.end, 6000000) + 1
+    if args.num > 0:
+        end = start + args.num
+    else:
+        end = min(args.end, 6000000) + 1
+
     print(f"start: {start} ---- end: {args.end}")
 
     max_workers = args.workers
