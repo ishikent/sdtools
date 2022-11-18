@@ -164,9 +164,9 @@ def main_task(seg_id):
     driver.get(base_url)
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".post-preview-link")))
 
-    for idx in range(len(data[seg_id]) - 1, -1, -1):
-        id = data[seg_id][idx]
-        print(f"loop id : {id}")
+    while data:
+        id = data.pop()
+        print(f"process {seg_id} ---> loop id : {id}")
         tmp_url = f"{base_url}/{id}"
         driver.get(tmp_url)
 
@@ -194,7 +194,6 @@ def main_task(seg_id):
         download_img(driver, img_src["srcset"], f"{dirname}/{id:015}")
 
         # print(keisoku(driver))
-        del data[seg_id][idx]
     driver.quit()
     display.stop()
 
@@ -241,7 +240,7 @@ if __name__ == "__main__":
     if args.num > 0:
         end = start + args.num
     else:
-        end = min(args.end, 6000000) + 1
+        end = min(args.end, 6000000)
 
     print(f"start: {start} ---- end: {args.end}")
 
@@ -249,11 +248,11 @@ if __name__ == "__main__":
     completed_workers = 0
     print(f"workers : {max_workers}")
     with Manager() as manager:
-        data = manager.list([manager.list(arr) for arr in np.array_split([id for id in range(start, end)], max_workers)])
+        data = manager.list(range(end, start - 1, -1))
         with ProcessPoolExecutor(max_workers = max_workers) as executor:
             condition = Condition()
             lock = Lock()
-            future_to_segid = {executor.submit(main_task, seg_id) : seg_id for seg_id in range(len(data))}
+            future_to_segid = {executor.submit(main_task, seg_id) : seg_id for seg_id in range(max_workers)}
             for future in future_to_segid:
                 future.add_done_callback(callback)
 
