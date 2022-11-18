@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 import asyncio
 
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Manager, Condition, Lock
 import numpy as np
 
 import undetected_chromedriver.v2 as uc
@@ -151,7 +152,7 @@ def keisoku(driver):
     """
     return driver.execute_script(js)
 
-def main_task(id_range):
+def main_task(seg_id):
     display = Display(visible=0, size=(800, 600))
     display.start()
 
@@ -163,7 +164,8 @@ def main_task(id_range):
     driver.get(base_url)
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".post-preview-link")))
 
-    for id in id_range:
+    for idx in range(len(data[seg_id]) - 1, -1, -1):
+        id = data[seg_id][idx]
         print(f"loop id : {id}")
         tmp_url = f"{base_url}/{id}"
         driver.get(tmp_url)
@@ -192,9 +194,27 @@ def main_task(id_range):
         download_img(driver, img_src["srcset"], f"{dirname}/{id:015}")
 
         # print(keisoku(driver))
-
+        del data[seg_id][idx]
     driver.quit()
     display.stop()
+
+def callback(future):
+    global future_to_segid, completed_workers
+    seg_id = future_to_segid[future]
+    if future.exception():
+        print(f"プロセス{seg_id} : リトライ")
+        retry = executor.submit(main_task, seg_id)
+        future_to_segid[retry] = seg_id
+        retry.add_done_callback(callback)
+    else:
+        print(f"プロセス{seg_id} : 終了")
+        with lock:
+            completed_workers += 1
+            if completed_workers >= max_workers:
+                with condition:
+                    condition.notify()
+
+    del future_to_segid[future]
 
 if __name__ == "__main__":
 
@@ -226,12 +246,20 @@ if __name__ == "__main__":
     print(f"start: {start} ---- end: {args.end}")
 
     max_workers = args.workers
+    completed_workers = 0
     print(f"workers : {max_workers}")
-    with ProcessPoolExecutor(max_workers = max_workers) as executor:
-        futures = []
-        for id_range in np.array_split([id for id in range(start, end)], max_workers):
-            futures.append(executor.submit(main_task, id_range))
-        for future in futures:
-            future.result()
+    with Manager() as manager:
+        data = manager.list([manager.list(arr) for arr in np.array_split([id for id in range(start, end)], max_workers)])
+        with ProcessPoolExecutor(max_workers = max_workers) as executor:
+            condition = Condition()
+            lock = Lock()
+            future_to_segid = {executor.submit(main_task, seg_id) : seg_id for seg_id in range(len(data))}
+            for future in future_to_segid:
+                future.add_done_callback(callback)
+
+            with condition:
+                condition.wait()
+                for i, segment in enumerate(data):
+                    print(f"{i} : {segment}")
 
 
